@@ -1,0 +1,40 @@
+package com.example.imageshowerpaging3.data.paging
+
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import com.example.imageshowerpaging3.data.remote.UnsplashApi
+import com.example.imageshowerpaging3.model.UspalshImage
+import com.example.imageshowerpaging3.utils.Constans.ITEMS_PER_PAGE
+import javax.inject.Inject
+
+class SearchPagingSource(
+    private val uspalshApi: UnsplashApi,
+    private val query:String,
+) :PagingSource<Int, UspalshImage>() {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, UspalshImage> {
+        val currentPage = params.key ?: 1
+        return try {
+            val response = uspalshApi.SearchImage( query = query, perPage = ITEMS_PER_PAGE)
+            val endOfPaginetRached=response.images.isEmpty()
+            if(response.images.isNotEmpty()){
+                LoadResult.Page(
+                    data = response.images,
+                    prevKey = if(currentPage==1)null else currentPage-1,
+                    nextKey = if(endOfPaginetRached)null else currentPage+1
+                )
+            }else{
+                LoadResult.Page(
+                    data = emptyList(),
+                    prevKey = null,
+                    nextKey = null
+                )
+            }
+        }catch (e:Exception){
+            LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, UspalshImage>): Int? {
+        return state.anchorPosition
+    }
+}
